@@ -1,0 +1,83 @@
+package billing
+
+import (
+	"context"
+
+	"github.com/pkg/errors"
+	"github.com/selefra/selefra-provider-gcp/gcp_client"
+	"github.com/selefra/selefra-provider-gcp/table_schema_generator"
+	"github.com/selefra/selefra-provider-sdk/provider/schema"
+	"github.com/selefra/selefra-provider-sdk/provider/transformer/column_value_extractor"
+	"google.golang.org/api/iterator"
+	pb "google.golang.org/genproto/googleapis/cloud/billing/v1"
+)
+
+type TableGcpBillingServicesGenerator struct {
+}
+
+var _ table_schema_generator.TableSchemaGenerator = &TableGcpBillingServicesGenerator{}
+
+func (x *TableGcpBillingServicesGenerator) GetTableName() string {
+	return "gcp_billing_services"
+}
+
+func (x *TableGcpBillingServicesGenerator) GetTableDescription() string {
+	return ""
+}
+
+func (x *TableGcpBillingServicesGenerator) GetVersion() uint64 {
+	return 0
+}
+
+func (x *TableGcpBillingServicesGenerator) GetOptions() *schema.TableOptions {
+	return &schema.TableOptions{
+		PrimaryKeys: []string{
+			"name",
+		},
+	}
+}
+
+func (x *TableGcpBillingServicesGenerator) GetDataSource() *schema.DataSource {
+	return &schema.DataSource{
+		Pull: func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask, resultChannel chan<- any) *schema.Diagnostics {
+			c := client.(*gcp_client.Client)
+			req := &pb.ListServicesRequest{}
+			it := c.GcpServices.BillingCloudCatalogClient.ListServices(ctx, req)
+			for {
+				resp, err := it.Next()
+				if err == iterator.Done {
+					break
+				}
+				if err != nil {
+					maybeError := errors.WithStack(err)
+					return schema.NewDiagnosticsErrorPullTable(task.Table, maybeError)
+				}
+
+				resultChannel <- resp
+
+			}
+			return nil
+		},
+	}
+}
+
+func (x *TableGcpBillingServicesGenerator) GetExpandClientTask() func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask) []*schema.ClientTaskContext {
+	return gcp_client.ExpandByProjects()
+}
+
+func (x *TableGcpBillingServicesGenerator) GetColumns() []*schema.Column {
+	return []*schema.Column{
+		table_schema_generator.NewColumnBuilder().ColumnName("project_id").ColumnType(schema.ColumnTypeString).
+			Extractor(gcp_client.ExtractorProject()).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("service_id").ColumnType(schema.ColumnTypeString).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("display_name").ColumnType(schema.ColumnTypeString).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("business_entity_name").ColumnType(schema.ColumnTypeString).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("primary keys value md5").
+			Extractor(column_value_extractor.PrimaryKeysID()).Build(),
+	}
+}
+
+func (x *TableGcpBillingServicesGenerator) GetSubTables() []*schema.Table {
+	return nil
+}
