@@ -74,6 +74,12 @@ func newClient(providerConfig Config) (*Client, error) {
 	}
 
 	serviceAccountKeyJSON := []byte(providerConfig.ServiceAccountKeyJSON)
+	if len(serviceAccountKeyJSON) == 0 && providerConfig.ServiceAccountKeyJSONFile != "" {
+		data, err := os.ReadFile(providerConfig.ServiceAccountKeyJSONFile)
+		if err == nil {
+			serviceAccountKeyJSON = data
+		}
+	}
 	if len(serviceAccountKeyJSON) == 0 {
 		if providerConfig.ServiceAccountEnvKey == "" {
 			providerConfig.ServiceAccountEnvKey = serviceAccountEnvKey
