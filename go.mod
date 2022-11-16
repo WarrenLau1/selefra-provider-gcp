@@ -20,7 +20,7 @@ require (
 	cloud.google.com/go/storage v1.27.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/pkg/errors v0.9.1
-	github.com/selefra/selefra-provider-sdk v0.0.9-0.20221028095343-84c3c21bad7c
+	github.com/selefra/selefra-provider-sdk v0.0.12
 	github.com/selefra/selefra-utils v0.0.2
 	github.com/spf13/viper v1.13.0
 	google.golang.org/api v0.98.0
