@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const Version = "v0.0.1"
+const Version = "v0.0.2"
 
 func GetProvider() *provider.Provider {
 	return &provider.Provider{
