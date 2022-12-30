@@ -19,13 +19,10 @@ func GetProvider() *provider.Provider {
 		TableList: GenTables(),
 		ClientMeta: schema.ClientMeta{
 			InitClient: func(ctx context.Context, clientMeta *schema.ClientMeta, config *viper.Viper) ([]any, *schema.Diagnostics) {
-				var gcpConfig gcp_client.Configs
+				var gcpConfig gcp_client.Config
 				err := config.Unmarshal(&gcpConfig)
 				if err != nil {
 					return nil, schema.NewDiagnostics().AddErrorMsg("analysis config err: %s", err.Error())
-				}
-				if len(gcpConfig.Providers) == 0 {
-					gcpConfig.Providers = append(gcpConfig.Providers, gcp_client.Config{})
 				}
 
 				clients, err := gcp_client.NewClients(gcpConfig)
@@ -61,7 +58,7 @@ func GetProvider() *provider.Provider {
 #    service_account_env_key: # environment variable, equivalent to SELEFRA_SERVICE_ACCOUNT_KEY_JSON by default`
 			},
 			Validation: func(ctx context.Context, config *viper.Viper) *schema.Diagnostics {
-				var gcpConfig gcp_client.Configs
+				var gcpConfig gcp_client.Config
 				err := config.Unmarshal(&gcpConfig)
 				if err != nil {
 					return schema.NewDiagnostics().AddErrorMsg("analysis config err: %s", err.Error())

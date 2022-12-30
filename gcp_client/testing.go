@@ -44,7 +44,7 @@ func newTestProvider(table *schema.Table, builder func() (*GcpServices, error)) 
 				return ``
 			},
 			Validation: func(ctx context.Context, config *viper.Viper) *schema.Diagnostics {
-				var gcpConfig Configs
+				var gcpConfig Config
 				err := config.Unmarshal(&gcpConfig)
 				if err != nil {
 					return schema.NewDiagnostics().AddErrorMsg("analysis config err: %s", err.Error())
