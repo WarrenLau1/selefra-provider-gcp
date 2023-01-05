@@ -54,16 +54,12 @@ func isValidJson(content []byte) error {
 	return nil
 }
 
-func NewClients(configs Configs) ([]*Client, error) {
-	var clients []*Client
-	for _, provider := range configs.Providers {
-		client, err := newClient(provider)
-		if err != nil {
-			return nil, err
-		}
-		clients = append(clients, client)
+func NewClients(config Config) ([]*Client, error) {
+	client, err := newClient(config)
+	if err != nil {
+		return nil, err
 	}
-	return clients, nil
+	return []*Client{client}, nil
 }
 
 func newClient(providerConfig Config) (*Client, error) {

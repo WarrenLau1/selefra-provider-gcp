@@ -1,9 +1,5 @@
 package gcp_client
 
-type Configs struct {
-	Providers []Config `yaml:"providers"  mapstructure:"providers"`
-}
-
 type Config struct {
 	ProjectIDs                []string `yaml:"project_ids,omitempty" mapstructure:"project_ids"`
 	FolderIDs                 []string `yaml:"folder_ids,omitempty" mapstructure:"folder_ids"`
