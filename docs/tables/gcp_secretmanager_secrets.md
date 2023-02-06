@@ -1,25 +1,18 @@
 # Table: gcp_secretmanager_secrets
 
-## Primary Keys 
-
-```
-name
-```
-
-
 ## Columns 
 
 |  Column Name   |  Data Type  | Uniq | Nullable | Description | 
 |  ----  | ----  | ----  | ----  | ---- | 
-| topics | json | X | √ |  | 
-| version_aliases | json | X | √ |  | 
-| selefra_id | string | √ | √ | primary keys value md5 | 
 | project_id | string | X | √ |  | 
-| replication | json | X | √ |  | 
-| create_time | timestamp | X | √ |  | 
-| rotation | json | X | √ |  | 
-| name | string | √ | √ |  | 
+| selefra_id | string | √ | √ | random id | 
+| create_time | json | X | √ |  | 
 | labels | json | X | √ |  | 
+| rotation | json | X | √ |  | 
+| version_aliases | json | X | √ |  | 
+| name | string | X | √ |  | 
+| replication | json | X | √ |  | 
+| topics | json | X | √ |  | 
 | etag | string | X | √ |  | 
 
 

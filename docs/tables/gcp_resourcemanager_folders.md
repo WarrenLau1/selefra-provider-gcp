@@ -4,15 +4,15 @@
 
 |  Column Name   |  Data Type  | Uniq | Nullable | Description | 
 |  ----  | ----  | ----  | ----  | ---- | 
+| create_time | string | X | √ |  | 
+| delete_time | string | X | √ |  | 
 | etag | string | X | √ |  | 
-| selefra_id | string | √ | √ | random id | 
-| project_id | string | X | √ |  | 
-| parent | string | X | √ |  | 
+| state | string | X | √ |  | 
+| selefra_id | string | √ | √ | primary keys value md5 | 
 | display_name | string | X | √ |  | 
-| update_time | timestamp | X | √ |  | 
-| delete_time | timestamp | X | √ |  | 
 | name | string | X | √ |  | 
-| state | big_int | X | √ |  | 
-| create_time | timestamp | X | √ |  | 
+| parent | string | X | √ |  | 
+| update_time | string | X | √ |  | 
+| organization_id | string | X | √ |  | 
 
 

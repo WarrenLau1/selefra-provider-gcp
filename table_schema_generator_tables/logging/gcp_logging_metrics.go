@@ -2,14 +2,14 @@ package logging
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
 	"github.com/selefra/selefra-provider-gcp/gcp_client"
+
+	logging "cloud.google.com/go/logging/apiv2"
+	pb "cloud.google.com/go/logging/apiv2/loggingpb"
 	"github.com/selefra/selefra-provider-gcp/table_schema_generator"
 	"github.com/selefra/selefra-provider-sdk/provider/schema"
 	"github.com/selefra/selefra-provider-sdk/provider/transformer/column_value_extractor"
 	"google.golang.org/api/iterator"
-	pb "google.golang.org/genproto/googleapis/logging/v2"
 )
 
 type TableGcpLoggingMetricsGenerator struct {
@@ -30,11 +30,7 @@ func (x *TableGcpLoggingMetricsGenerator) GetVersion() uint64 {
 }
 
 func (x *TableGcpLoggingMetricsGenerator) GetOptions() *schema.TableOptions {
-	return &schema.TableOptions{
-		PrimaryKeys: []string{
-			"name",
-		},
-	}
+return &schema.TableOptions{}
 }
 
 func (x *TableGcpLoggingMetricsGenerator) GetDataSource() *schema.DataSource {
@@ -44,19 +40,23 @@ func (x *TableGcpLoggingMetricsGenerator) GetDataSource() *schema.DataSource {
 			req := &pb.ListLogMetricsRequest{
 				Parent: "projects/" + c.ProjectId,
 			}
-			it := c.GcpServices.LoggingMetricsClient.ListLogMetrics(ctx, req)
+			gcpClient, err := logging.NewMetricsClient(ctx, c.ClientOptions...)
+			if err != nil {
+				return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
+			}
+			it := gcpClient.ListLogMetrics(ctx, req, c.CallOptions...)
 			for {
 				resp, err := it.Next()
 				if err == iterator.Done {
 					break
 				}
 				if err != nil {
-					maybeError := errors.WithStack(err)
-					return schema.NewDiagnosticsErrorPullTable(task.Table, maybeError)
+					return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
 				}
 
 				resultChannel <- resp
-
 			}
 			return nil
 		},
@@ -64,28 +64,37 @@ func (x *TableGcpLoggingMetricsGenerator) GetDataSource() *schema.DataSource {
 }
 
 func (x *TableGcpLoggingMetricsGenerator) GetExpandClientTask() func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask) []*schema.ClientTaskContext {
-	return gcp_client.ExpandByProjects()
+	return nil
 }
 
 func (x *TableGcpLoggingMetricsGenerator) GetColumns() []*schema.Column {
 	return []*schema.Column{
-		table_schema_generator.NewColumnBuilder().ColumnName("label_extractors").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("create_time").ColumnType(schema.ColumnTypeTimestamp).
-			Extractor(gcp_client.ExtractorProtoTimestamp("CreateTime")).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("update_time").ColumnType(schema.ColumnTypeTimestamp).
-			Extractor(gcp_client.ExtractorProtoTimestamp("UpdateTime")).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("primary keys value md5").
-			Extractor(column_value_extractor.PrimaryKeysID()).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("description").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("value_extractor").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("metric_descriptor").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("bucket_options").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("version").ColumnType(schema.ColumnTypeBigInt).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("update_time").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("UpdateTime")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("version").ColumnType(schema.ColumnTypeBigInt).
+			Extractor(column_value_extractor.StructSelector("Version")).Build(),
 		table_schema_generator.NewColumnBuilder().ColumnName("project_id").ColumnType(schema.ColumnTypeString).
 			Extractor(gcp_client.ExtractorProject()).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("filter").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("disabled").ColumnType(schema.ColumnTypeBool).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Name")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("filter").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Filter")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("disabled").ColumnType(schema.ColumnTypeBool).
+			Extractor(column_value_extractor.StructSelector("Disabled")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("label_extractors").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("LabelExtractors")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("bucket_options").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("BucketOptions")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("description").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Description")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("metric_descriptor").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("MetricDescriptor")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("value_extractor").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("ValueExtractor")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("create_time").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("CreateTime")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("primary keys value md5").
+			Extractor(column_value_extractor.UUID()).Build(),
 	}
 }
 

@@ -4,19 +4,19 @@
 
 |  Column Name   |  Data Type  | Uniq | Nullable | Description | 
 |  ----  | ----  | ----  | ----  | ---- | 
-| labels | json | X | √ |  | 
-| primary | json | X | √ |  | 
-| purpose | string | X | √ |  | 
-| selefra_id | string | √ | √ | random id | 
-| gcp_kms_keyrings_selefra_id | string | X | X | fk to gcp_kms_keyrings.selefra_id | 
-| project_id | string | X | √ |  | 
-| create_time | string | X | √ |  | 
 | import_only | bool | X | √ |  | 
-| name | string | X | √ |  | 
-| rotation_period | string | X | √ |  | 
-| version_template | json | X | √ |  | 
+| destroy_scheduled_duration | json | X | √ |  | 
+| project_id | string | X | √ |  | 
+| rotation_period | big_int | X | √ |  | 
+| create_time | json | X | √ |  | 
 | crypto_key_backend | string | X | √ |  | 
-| next_rotation_time | string | X | √ |  | 
-| destroy_scheduled_duration | string | X | √ |  | 
+| primary | json | X | √ |  | 
+| purpose | big_int | X | √ |  | 
+| selefra_id | string | √ | √ | primary keys value md5 | 
+| name | string | X | √ |  | 
+| version_template | json | X | √ |  | 
+| labels | json | X | √ |  | 
+| gcp_kms_keyrings_selefra_id | string | X | X | fk to gcp_kms_keyrings.selefra_id | 
+| next_rotation_time | json | X | √ |  | 
 
 

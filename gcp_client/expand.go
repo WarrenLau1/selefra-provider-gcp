@@ -20,3 +20,20 @@ func ExpandByProjects() func(ctx context.Context, clientMeta *schema.ClientMeta,
 		return clientTaskContextSlice
 	}
 }
+
+func ExpandOrgMultiplex() func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask) []*schema.ClientTaskContext {
+	return func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask) []*schema.ClientTaskContext {
+		cli := client.(*Client)
+
+		l := make([]*schema.ClientTaskContext, 0)
+
+		for _, orgId := range cli.orgs {
+			l = append(l, &schema.ClientTaskContext{
+				Client: cli.withOrg(orgId),
+				Task:   task.Clone(),
+			})
+		}
+
+		return l
+	}
+}

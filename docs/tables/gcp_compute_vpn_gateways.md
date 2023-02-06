@@ -1,29 +1,22 @@
 # Table: gcp_compute_vpn_gateways
 
-## Primary Keys 
-
-```
-self_link
-```
-
-
 ## Columns 
 
 |  Column Name   |  Data Type  | Uniq | Nullable | Description | 
 |  ----  | ----  | ----  | ----  | ---- | 
-| stack_type | string | X | √ |  | 
 | id | big_int | X | √ |  | 
-| label_fingerprint | string | X | √ |  | 
-| labels | json | X | √ |  | 
-| vpn_interfaces | json | X | √ |  | 
-| self_link | string | √ | √ |  | 
 | kind | string | X | √ |  | 
-| region | string | X | √ |  | 
-| creation_timestamp | string | X | √ |  | 
+| stack_type | string | X | √ |  | 
+| vpn_interfaces | json | X | √ |  | 
 | name | string | X | √ |  | 
-| selefra_id | string | √ | √ | primary keys value md5 | 
+| creation_timestamp | string | X | √ |  | 
+| label_fingerprint | string | X | √ |  | 
+| region | string | X | √ |  | 
 | project_id | string | X | √ |  | 
 | description | string | X | √ |  | 
+| labels | json | X | √ |  | 
 | network | string | X | √ |  | 
+| self_link | string | X | √ |  | 
+| selefra_id | string | √ | √ | random id | 
 
 

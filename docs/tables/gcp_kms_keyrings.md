@@ -4,9 +4,10 @@
 
 |  Column Name   |  Data Type  | Uniq | Nullable | Description | 
 |  ----  | ----  | ----  | ----  | ---- | 
-| project_id | string | X | √ |  | 
 | name | string | X | √ |  | 
-| create_time | timestamp | X | √ |  | 
-| selefra_id | string | √ | √ | random id | 
+| create_time | json | X | √ |  | 
+| project_id | string | X | √ |  | 
+| gcp_kms_locations_selefra_id | string | X | X | fk to gcp_kms_locations.selefra_id | 
+| selefra_id | string | √ | √ | primary keys value md5 | 
 
 

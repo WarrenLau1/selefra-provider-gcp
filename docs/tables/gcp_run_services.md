@@ -4,35 +4,13 @@
 
 |  Column Name   |  Data Type  | Uniq | Nullable | Description | 
 |  ----  | ----  | ----  | ----  | ---- | 
-| launch_stage | big_int | X | √ |  | 
-| template | json | X | √ |  | 
-| reconciling | bool | X | √ |  | 
-| selefra_id | string | √ | √ | random id | 
+| api_version | string | X | √ |  | 
+| kind | string | X | √ |  | 
+| metadata | json | X | √ |  | 
+| spec | json | X | √ |  | 
+| status | json | X | √ |  | 
 | project_id | string | X | √ |  | 
-| uid | string | X | √ |  | 
-| create_time | timestamp | X | √ |  | 
-| creator | string | X | √ |  | 
-| description | string | X | √ |  | 
-| latest_ready_revision | string | X | √ |  | 
-| latest_created_revision | string | X | √ |  | 
-| delete_time | timestamp | X | √ |  | 
-| client_version | string | X | √ |  | 
-| annotations | json | X | √ |  | 
-| update_time | timestamp | X | √ |  | 
-| client | string | X | √ |  | 
-| last_modifier | string | X | √ |  | 
-| binary_authorization | json | X | √ |  | 
-| terminal_condition | json | X | √ |  | 
-| etag | string | X | √ |  | 
-| labels | json | X | √ |  | 
-| expire_time | timestamp | X | √ |  | 
-| traffic | json | X | √ |  | 
-| conditions | json | X | √ |  | 
-| traffic_statuses | json | X | √ |  | 
-| uri | string | X | √ |  | 
-| name | string | X | √ |  | 
-| generation | big_int | X | √ |  | 
-| ingress | big_int | X | √ |  | 
-| observed_generation | big_int | X | √ |  | 
+| selefra_id | string | √ | √ | primary keys value md5 | 
+| gcp_run_locations_selefra_id | string | X | X | fk to gcp_run_locations.selefra_id | 
 
 

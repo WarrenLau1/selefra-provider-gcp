@@ -2,14 +2,14 @@ package compute
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
 	"github.com/selefra/selefra-provider-gcp/gcp_client"
+
+	compute "cloud.google.com/go/compute/apiv1"
+	pb "cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/selefra/selefra-provider-gcp/table_schema_generator"
 	"github.com/selefra/selefra-provider-sdk/provider/schema"
 	"github.com/selefra/selefra-provider-sdk/provider/transformer/column_value_extractor"
 	"google.golang.org/api/iterator"
-	pb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 )
 
 type TableGcpComputeInstanceGroupsGenerator struct {
@@ -30,11 +30,7 @@ func (x *TableGcpComputeInstanceGroupsGenerator) GetVersion() uint64 {
 }
 
 func (x *TableGcpComputeInstanceGroupsGenerator) GetOptions() *schema.TableOptions {
-	return &schema.TableOptions{
-		PrimaryKeys: []string{
-			"self_link",
-		},
-	}
+	return &schema.TableOptions{}
 }
 
 func (x *TableGcpComputeInstanceGroupsGenerator) GetDataSource() *schema.DataSource {
@@ -44,19 +40,23 @@ func (x *TableGcpComputeInstanceGroupsGenerator) GetDataSource() *schema.DataSou
 			req := &pb.AggregatedListInstanceGroupsRequest{
 				Project: c.ProjectId,
 			}
-			it := c.GcpServices.ComputeInstanceGroupsClient.AggregatedList(ctx, req)
+			gcpClient, err := compute.NewInstanceGroupsRESTClient(ctx, c.ClientOptions...)
+			if err != nil {
+				return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
+			}
+			it := gcpClient.AggregatedList(ctx, req, c.CallOptions...)
 			for {
 				resp, err := it.Next()
 				if err == iterator.Done {
 					break
 				}
 				if err != nil {
-					maybeError := errors.WithStack(err)
-					return schema.NewDiagnosticsErrorPullTable(task.Table, maybeError)
+					return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
 				}
 
 				resultChannel <- resp.Value.InstanceGroups
-
 			}
 			return nil
 		},
@@ -64,28 +64,41 @@ func (x *TableGcpComputeInstanceGroupsGenerator) GetDataSource() *schema.DataSou
 }
 
 func (x *TableGcpComputeInstanceGroupsGenerator) GetExpandClientTask() func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask) []*schema.ClientTaskContext {
-	return gcp_client.ExpandByProjects()
+	return nil
 }
 
 func (x *TableGcpComputeInstanceGroupsGenerator) GetColumns() []*schema.Column {
 	return []*schema.Column{
-		table_schema_generator.NewColumnBuilder().ColumnName("kind").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("network").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("subnetwork").ColumnType(schema.ColumnTypeString).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Name")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("named_ports").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("NamedPorts")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("region").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Region")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("size").ColumnType(schema.ColumnTypeBigInt).
+			Extractor(column_value_extractor.StructSelector("Size")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("zone").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Zone")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("random id").
+			Extractor(column_value_extractor.UUID()).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("creation_timestamp").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("CreationTimestamp")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("id").ColumnType(schema.ColumnTypeBigInt).
+			Extractor(column_value_extractor.StructSelector("Id")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("network").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Network")).Build(),
 		table_schema_generator.NewColumnBuilder().ColumnName("project_id").ColumnType(schema.ColumnTypeString).
 			Extractor(gcp_client.ExtractorProject()).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("id").ColumnType(schema.ColumnTypeBigInt).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("size").ColumnType(schema.ColumnTypeBigInt).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("fingerprint").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("named_ports").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("region").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("zone").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("self_link").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("creation_timestamp").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("description").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("primary keys value md5").
-			Extractor(column_value_extractor.PrimaryKeysID()).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("self_link").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("SelfLink")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("description").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Description")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("fingerprint").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Fingerprint")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("kind").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Kind")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("subnetwork").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Subnetwork")).Build(),
 	}
 }
 

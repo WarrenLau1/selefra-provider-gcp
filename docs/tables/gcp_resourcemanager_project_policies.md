@@ -4,11 +4,11 @@
 
 |  Column Name   |  Data Type  | Uniq | Nullable | Description | 
 |  ----  | ----  | ----  | ----  | ---- | 
-| project_id | string | X | √ |  | 
+| selefra_id | string | √ | √ | random id | 
 | audit_configs | json | X | √ |  | 
 | bindings | json | X | √ |  | 
 | etag | string | X | √ |  | 
 | version | big_int | X | √ |  | 
-| selefra_id | string | √ | √ | random id | 
+| project_id | string | X | √ |  | 
 
 

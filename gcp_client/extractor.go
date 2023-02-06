@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-
 	"github.com/selefra/selefra-provider-sdk/provider/schema"
 	"github.com/selefra/selefra-provider-sdk/provider/transformer/column_value_extractor"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -48,5 +47,11 @@ func ExtractorProtoEtag() schema.ColumnValueExtractor {
 		default:
 			return data, nil
 		}
+	})
+}
+
+func ExtractorOrganization() schema.ColumnValueExtractor {
+	return column_value_extractor.WrapperExtractFunction(func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask, row *schema.Row, column *schema.Column, result any) (any, *schema.Diagnostics) {
+		return client.(*Client).OrgId, nil
 	})
 }

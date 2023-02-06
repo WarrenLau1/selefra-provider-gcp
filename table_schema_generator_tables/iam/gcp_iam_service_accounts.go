@@ -2,12 +2,14 @@ package iam
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
 	"github.com/selefra/selefra-provider-gcp/gcp_client"
+
+	admin "cloud.google.com/go/iam/admin/apiv1"
+	pb "cloud.google.com/go/iam/admin/apiv1/adminpb"
 	"github.com/selefra/selefra-provider-gcp/table_schema_generator"
 	"github.com/selefra/selefra-provider-sdk/provider/schema"
 	"github.com/selefra/selefra-provider-sdk/provider/transformer/column_value_extractor"
+	"google.golang.org/api/iterator"
 )
 
 type TableGcpIamServiceAccountsGenerator struct {
@@ -28,30 +30,33 @@ func (x *TableGcpIamServiceAccountsGenerator) GetVersion() uint64 {
 }
 
 func (x *TableGcpIamServiceAccountsGenerator) GetOptions() *schema.TableOptions {
-	return &schema.TableOptions{
-		PrimaryKeys: []string{
-			"unique_id",
-		},
-	}
+	return &schema.TableOptions{}
 }
 
 func (x *TableGcpIamServiceAccountsGenerator) GetDataSource() *schema.DataSource {
 	return &schema.DataSource{
 		Pull: func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask, resultChannel chan<- any) *schema.Diagnostics {
 			c := client.(*gcp_client.Client)
-			nextPageToken := ""
-			for {
-				output, err := c.GcpServices.Iam.Projects.ServiceAccounts.List("projects/" + c.ProjectId).PageToken(nextPageToken).Do()
-				if err != nil {
-					maybeError := errors.WithStack(err)
-					return schema.NewDiagnosticsErrorPullTable(task.Table, maybeError)
-				}
-				resultChannel <- output.Accounts
+			req := &pb.ListServiceAccountsRequest{
+				Name: "projects/" + c.ProjectId,
+			}
+			gcpClient, err := admin.NewIamClient(ctx, c.ClientOptions...)
+			if err != nil {
+				return schema.NewDiagnosticsErrorPullTable(task.Table, err)
 
-				if output.NextPageToken == "" {
+			}
+			it := gcpClient.ListServiceAccounts(ctx, req, c.CallOptions...)
+			for {
+				resp, err := it.Next()
+				if err == iterator.Done {
 					break
 				}
-				nextPageToken = output.NextPageToken
+				if err != nil {
+					return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
+				}
+
+				resultChannel <- resp
 			}
 			return nil
 		},
@@ -59,24 +64,30 @@ func (x *TableGcpIamServiceAccountsGenerator) GetDataSource() *schema.DataSource
 }
 
 func (x *TableGcpIamServiceAccountsGenerator) GetExpandClientTask() func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask) []*schema.ClientTaskContext {
-	return gcp_client.ExpandByProjects()
+	return nil
 }
 
 func (x *TableGcpIamServiceAccountsGenerator) GetColumns() []*schema.Column {
 	return []*schema.Column{
-		table_schema_generator.NewColumnBuilder().ColumnName("email").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("etag").ColumnType(schema.ColumnTypeString).
-			Extractor(gcp_client.ExtractorProtoEtag()).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("oauth2_client_id").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("unique_id").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("description").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("disabled").ColumnType(schema.ColumnTypeBool).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("primary keys value md5").
-			Extractor(column_value_extractor.PrimaryKeysID()).Build(),
 		table_schema_generator.NewColumnBuilder().ColumnName("project_id").ColumnType(schema.ColumnTypeString).
 			Extractor(gcp_client.ExtractorProject()).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("display_name").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("unique_id").ColumnType(schema.ColumnTypeString).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("etag").ColumnType(schema.ColumnTypeIntArray).
+			Extractor(column_value_extractor.StructSelector("Etag")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Name")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("display_name").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("DisplayName")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("description").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Description")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("oauth2_client_id").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Oauth2ClientId")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("disabled").ColumnType(schema.ColumnTypeBool).
+			Extractor(column_value_extractor.StructSelector("Disabled")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("primary keys value md5").
+			Extractor(column_value_extractor.UUID()).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("email").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Email")).Build(),
 	}
 }
 

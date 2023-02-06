@@ -4,19 +4,19 @@
 
 |  Column Name   |  Data Type  | Uniq | Nullable | Description | 
 |  ----  | ----  | ----  | ----  | ---- | 
-| create_time | timestamp | X | √ |  | 
-| expire_time | timestamp | X | √ |  | 
 | issues | int_array | X | √ |  | 
-| pending_contact_settings | json | X | √ |  | 
 | labels | json | X | √ |  | 
-| contact_settings | json | X | √ |  | 
-| selefra_id | string | √ | √ | random id | 
-| domain_name | string | X | √ |  | 
-| state | big_int | X | √ |  | 
+| management_settings | json | X | √ |  | 
 | dns_settings | json | X | √ |  | 
-| supported_privacy | int_array | X | √ |  | 
+| pending_contact_settings | json | X | √ |  | 
+| create_time | json | X | √ |  | 
+| expire_time | json | X | √ |  | 
+| state | big_int | X | √ |  | 
+| contact_settings | json | X | √ |  | 
 | project_id | string | X | √ |  | 
 | name | string | X | √ |  | 
-| management_settings | json | X | √ |  | 
+| domain_name | string | X | √ |  | 
+| supported_privacy | int_array | X | √ |  | 
+| selefra_id | string | √ | √ | primary keys value md5 | 
 
 

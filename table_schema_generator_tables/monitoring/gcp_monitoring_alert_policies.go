@@ -2,14 +2,14 @@ package monitoring
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
 	"github.com/selefra/selefra-provider-gcp/gcp_client"
+
+	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
+	pb "cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/selefra/selefra-provider-gcp/table_schema_generator"
 	"github.com/selefra/selefra-provider-sdk/provider/schema"
 	"github.com/selefra/selefra-provider-sdk/provider/transformer/column_value_extractor"
 	"google.golang.org/api/iterator"
-	pb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
 type TableGcpMonitoringAlertPoliciesGenerator struct {
@@ -30,11 +30,7 @@ func (x *TableGcpMonitoringAlertPoliciesGenerator) GetVersion() uint64 {
 }
 
 func (x *TableGcpMonitoringAlertPoliciesGenerator) GetOptions() *schema.TableOptions {
-	return &schema.TableOptions{
-		PrimaryKeys: []string{
-			"name",
-		},
-	}
+	return &schema.TableOptions{}
 }
 
 func (x *TableGcpMonitoringAlertPoliciesGenerator) GetDataSource() *schema.DataSource {
@@ -44,19 +40,23 @@ func (x *TableGcpMonitoringAlertPoliciesGenerator) GetDataSource() *schema.DataS
 			req := &pb.ListAlertPoliciesRequest{
 				Name: "projects/" + c.ProjectId,
 			}
-			it := c.GcpServices.MonitoringAlertPolicyClient.ListAlertPolicies(ctx, req)
+			gcpClient, err := monitoring.NewAlertPolicyClient(ctx, c.ClientOptions...)
+			if err != nil {
+				return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
+			}
+			it := gcpClient.ListAlertPolicies(ctx, req, c.CallOptions...)
 			for {
 				resp, err := it.Next()
 				if err == iterator.Done {
 					break
 				}
 				if err != nil {
-					maybeError := errors.WithStack(err)
-					return schema.NewDiagnosticsErrorPullTable(task.Table, maybeError)
+					return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
 				}
 
 				resultChannel <- resp
-
 			}
 			return nil
 		},
@@ -64,27 +64,39 @@ func (x *TableGcpMonitoringAlertPoliciesGenerator) GetDataSource() *schema.DataS
 }
 
 func (x *TableGcpMonitoringAlertPoliciesGenerator) GetExpandClientTask() func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask) []*schema.ClientTaskContext {
-	return gcp_client.ExpandByProjects()
+	return nil
 }
 
 func (x *TableGcpMonitoringAlertPoliciesGenerator) GetColumns() []*schema.Column {
 	return []*schema.Column{
-		table_schema_generator.NewColumnBuilder().ColumnName("mutation_record").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("conditions").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("notification_channels").ColumnType(schema.ColumnTypeStringArray).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("primary keys value md5").
-			Extractor(column_value_extractor.PrimaryKeysID()).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("display_name").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("DisplayName")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("combiner").ColumnType(schema.ColumnTypeBigInt).
+			Extractor(column_value_extractor.StructSelector("Combiner")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("validity").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("Validity")).Build(),
 		table_schema_generator.NewColumnBuilder().ColumnName("project_id").ColumnType(schema.ColumnTypeString).
 			Extractor(gcp_client.ExtractorProject()).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("display_name").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("enabled").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("validity").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("documentation").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("user_labels").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("creation_record").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("alert_strategy").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("combiner").ColumnType(schema.ColumnTypeBigInt).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("enabled").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("Enabled")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("creation_record").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("CreationRecord")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Name")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("random id").
+			Extractor(column_value_extractor.UUID()).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("documentation").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("Documentation")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("user_labels").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("UserLabels")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("conditions").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("Conditions")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("notification_channels").ColumnType(schema.ColumnTypeStringArray).
+			Extractor(column_value_extractor.StructSelector("NotificationChannels")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("mutation_record").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("MutationRecord")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("alert_strategy").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("AlertStrategy")).Build(),
 	}
 }
 

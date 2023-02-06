@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/selefra/selefra-provider-sdk/env"
@@ -15,9 +14,8 @@ import (
 )
 
 func TestProvider_PullTable(t *testing.T) {
-	os.Setenv("SELEFRA_DATABASE_DSN", "host=127.0.0.1 user=postgres password=pass port=5432 dbname=postgres sslmode=disable")
 	wk := "."
-	config := `provider:`
+	config := ``
 	myProvider := GetProvider()
 	Pull(myProvider, config, wk, "*")
 }

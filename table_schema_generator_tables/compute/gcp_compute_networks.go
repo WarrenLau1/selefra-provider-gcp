@@ -2,14 +2,14 @@ package compute
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
 	"github.com/selefra/selefra-provider-gcp/gcp_client"
+
+	compute "cloud.google.com/go/compute/apiv1"
+	pb "cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/selefra/selefra-provider-gcp/table_schema_generator"
 	"github.com/selefra/selefra-provider-sdk/provider/schema"
 	"github.com/selefra/selefra-provider-sdk/provider/transformer/column_value_extractor"
 	"google.golang.org/api/iterator"
-	pb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 )
 
 type TableGcpComputeNetworksGenerator struct {
@@ -30,11 +30,7 @@ func (x *TableGcpComputeNetworksGenerator) GetVersion() uint64 {
 }
 
 func (x *TableGcpComputeNetworksGenerator) GetOptions() *schema.TableOptions {
-	return &schema.TableOptions{
-		PrimaryKeys: []string{
-			"self_link",
-		},
-	}
+	return &schema.TableOptions{}
 }
 
 func (x *TableGcpComputeNetworksGenerator) GetDataSource() *schema.DataSource {
@@ -44,19 +40,23 @@ func (x *TableGcpComputeNetworksGenerator) GetDataSource() *schema.DataSource {
 			req := &pb.ListNetworksRequest{
 				Project: c.ProjectId,
 			}
-			it := c.GcpServices.ComputeNetworksClient.List(ctx, req)
+			gcpClient, err := compute.NewNetworksRESTClient(ctx, c.ClientOptions...)
+			if err != nil {
+				return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
+			}
+			it := gcpClient.List(ctx, req, c.CallOptions...)
 			for {
 				resp, err := it.Next()
 				if err == iterator.Done {
 					break
 				}
 				if err != nil {
-					maybeError := errors.WithStack(err)
-					return schema.NewDiagnosticsErrorPullTable(task.Table, maybeError)
+					return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
 				}
 
 				resultChannel <- resp
-
 			}
 			return nil
 		},
@@ -64,35 +64,51 @@ func (x *TableGcpComputeNetworksGenerator) GetDataSource() *schema.DataSource {
 }
 
 func (x *TableGcpComputeNetworksGenerator) GetExpandClientTask() func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask) []*schema.ClientTaskContext {
-	return gcp_client.ExpandByProjects()
+	return nil
 }
 
 func (x *TableGcpComputeNetworksGenerator) GetColumns() []*schema.Column {
 	return []*schema.Column{
-		table_schema_generator.NewColumnBuilder().ColumnName("auto_create_subnetworks").ColumnType(schema.ColumnTypeBool).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("gateway_ipv4").ColumnType(schema.ColumnTypeString).
+		table_schema_generator.NewColumnBuilder().ColumnName("enable_ula_internal_ipv6").ColumnType(schema.ColumnTypeBool).
+			Extractor(column_value_extractor.StructSelector("EnableUlaInternalIpv6")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("id").ColumnType(schema.ColumnTypeBigInt).
+			Extractor(column_value_extractor.StructSelector("Id")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("peerings").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("Peerings")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("creation_timestamp").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("CreationTimestamp")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("gateway_i_pv4").ColumnType(schema.ColumnTypeString).
 			Extractor(column_value_extractor.StructSelector("GatewayIPv4")).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("kind").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("enable_ula_internal_ipv6").ColumnType(schema.ColumnTypeBool).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("self_link").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("ipv4_range").ColumnType(schema.ColumnTypeString).
+		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Name")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("self_link").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("SelfLink")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("self_link_with_id").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("SelfLinkWithId")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("subnetworks").ColumnType(schema.ColumnTypeStringArray).
+			Extractor(column_value_extractor.StructSelector("Subnetworks")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("auto_create_subnetworks").ColumnType(schema.ColumnTypeBool).
+			Extractor(column_value_extractor.StructSelector("AutoCreateSubnetworks")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("description").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Description")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("kind").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Kind")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("network_firewall_policy_enforcement_order").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("NetworkFirewallPolicyEnforcementOrder")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("routing_config").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("RoutingConfig")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("random id").
+			Extractor(column_value_extractor.UUID()).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("i_pv4_range").ColumnType(schema.ColumnTypeString).
 			Extractor(column_value_extractor.StructSelector("IPv4Range")).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("creation_timestamp").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("internal_ipv6_range").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("mtu").ColumnType(schema.ColumnTypeBigInt).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("subnetworks").ColumnType(schema.ColumnTypeStringArray).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("firewall_policy").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("FirewallPolicy")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("internal_ipv6_range").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("InternalIpv6Range")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("mtu").ColumnType(schema.ColumnTypeBigInt).
+			Extractor(column_value_extractor.StructSelector("Mtu")).Build(),
 		table_schema_generator.NewColumnBuilder().ColumnName("project_id").ColumnType(schema.ColumnTypeString).
 			Extractor(gcp_client.ExtractorProject()).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("description").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("id").ColumnType(schema.ColumnTypeBigInt).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("peerings").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("routing_config").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("self_link_with_id").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("primary keys value md5").
-			Extractor(column_value_extractor.PrimaryKeysID()).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("firewall_policy").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("network_firewall_policy_enforcement_order").ColumnType(schema.ColumnTypeString).Build(),
 	}
 }
 

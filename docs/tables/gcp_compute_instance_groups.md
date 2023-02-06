@@ -1,30 +1,23 @@
 # Table: gcp_compute_instance_groups
 
-## Primary Keys 
-
-```
-self_link
-```
-
-
 ## Columns 
 
 |  Column Name   |  Data Type  | Uniq | Nullable | Description | 
 |  ----  | ----  | ----  | ----  | ---- | 
-| kind | string | X | √ |  | 
-| network | string | X | √ |  | 
-| subnetwork | string | X | √ |  | 
-| project_id | string | X | √ |  | 
-| id | big_int | X | √ |  | 
-| size | big_int | X | √ |  | 
-| fingerprint | string | X | √ |  | 
 | name | string | X | √ |  | 
 | named_ports | json | X | √ |  | 
 | region | string | X | √ |  | 
+| size | big_int | X | √ |  | 
 | zone | string | X | √ |  | 
-| self_link | string | √ | √ |  | 
+| selefra_id | string | √ | √ | random id | 
 | creation_timestamp | string | X | √ |  | 
+| id | big_int | X | √ |  | 
+| network | string | X | √ |  | 
+| project_id | string | X | √ |  | 
+| self_link | string | X | √ |  | 
 | description | string | X | √ |  | 
-| selefra_id | string | √ | √ | primary keys value md5 | 
+| fingerprint | string | X | √ |  | 
+| kind | string | X | √ |  | 
+| subnetwork | string | X | √ |  | 
 
 

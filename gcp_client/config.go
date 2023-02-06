@@ -8,4 +8,16 @@ type Config struct {
 	AccountName               string   `yaml:"account_name,omitempty" mapstructure:"account_name"`
 	ServiceAccountEnvKey      string   `yaml:"service_account_env_key,omitempty" mapstructure:"service_account_env_key"`
 	ServiceAccountKeyJSONFile string   `yaml:"service_account_env_key,omitempty" mapstructure:"service_account_env_key"`
+	FolderRecursionDepth      *int     `yaml:"folder_recursion_depth" mapstructure:"folder_recursion_depth"`
+	ProjectFilter             string   `yaml:"project_filter" mapstructure:"project_filter"`
+	BackoffDelay              int      `yaml:"backoff_delay" mapstructure:"backoff_delay"`
+	BackoffRetries            int      `yaml:"backoff_retries" mapstructure:"backoff_retries"`
+	//EnabledServicesOnly       bool     `yaml:"enabled_services_only" mapstructure:"enabled_services_only"`
+}
+
+func (spec *Config) setDefaults() {
+	var defaultRecursionDepth = 100
+	if spec.FolderRecursionDepth == nil {
+		spec.FolderRecursionDepth = &defaultRecursionDepth
+	}
 }

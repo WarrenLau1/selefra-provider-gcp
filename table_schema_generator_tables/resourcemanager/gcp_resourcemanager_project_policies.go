@@ -2,13 +2,12 @@ package resourcemanager
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
 	"github.com/selefra/selefra-provider-gcp/gcp_client"
+
 	"github.com/selefra/selefra-provider-gcp/table_schema_generator"
 	"github.com/selefra/selefra-provider-sdk/provider/schema"
 	"github.com/selefra/selefra-provider-sdk/provider/transformer/column_value_extractor"
-	iampb "google.golang.org/genproto/googleapis/iam/v1"
+	pb "google.golang.org/api/cloudresourcemanager/v3"
 )
 
 type TableGcpResourcemanagerProjectPoliciesGenerator struct {
@@ -36,16 +35,16 @@ func (x *TableGcpResourcemanagerProjectPoliciesGenerator) GetDataSource() *schem
 	return &schema.DataSource{
 		Pull: func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask, resultChannel chan<- any) *schema.Diagnostics {
 			c := client.(*gcp_client.Client)
-
-			output, err := c.GcpServices.ResourcemanagerProjectsClient.GetIamPolicy(
-				ctx,
-				&iampb.GetIamPolicyRequest{
-					Resource: "projects/" + c.ProjectId,
-				},
-			)
+			projectsClient, err := pb.NewService(ctx, c.ClientOptions...)
 			if err != nil {
-				maybeError := errors.WithStack(err)
-				return schema.NewDiagnosticsErrorPullTable(task.Table, maybeError)
+				return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
+			}
+
+			output, err := projectsClient.Projects.GetIamPolicy("projects/"+c.ProjectId, &pb.GetIamPolicyRequest{}).Context(ctx).Do()
+			if err != nil {
+				return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
 			}
 			resultChannel <- output
 			return nil
@@ -54,20 +53,23 @@ func (x *TableGcpResourcemanagerProjectPoliciesGenerator) GetDataSource() *schem
 }
 
 func (x *TableGcpResourcemanagerProjectPoliciesGenerator) GetExpandClientTask() func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask) []*schema.ClientTaskContext {
-	return gcp_client.ExpandByProjects()
+	return nil
 }
 
 func (x *TableGcpResourcemanagerProjectPoliciesGenerator) GetColumns() []*schema.Column {
 	return []*schema.Column{
-		table_schema_generator.NewColumnBuilder().ColumnName("project_id").ColumnType(schema.ColumnTypeString).
-			Extractor(gcp_client.ExtractorProject()).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("audit_configs").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("bindings").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("etag").ColumnType(schema.ColumnTypeString).
-			Extractor(gcp_client.ExtractorProtoEtag()).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("version").ColumnType(schema.ColumnTypeBigInt).Build(),
 		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("random id").
 			Extractor(column_value_extractor.UUID()).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("audit_configs").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("AuditConfigs")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("bindings").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("Bindings")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("etag").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Etag")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("version").ColumnType(schema.ColumnTypeBigInt).
+			Extractor(column_value_extractor.StructSelector("Version")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("project_id").ColumnType(schema.ColumnTypeString).
+			Extractor(gcp_client.ExtractorProject()).Build(),
 	}
 }
 

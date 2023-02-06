@@ -2,12 +2,12 @@ package dns
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
 	"github.com/selefra/selefra-provider-gcp/gcp_client"
+
 	"github.com/selefra/selefra-provider-gcp/table_schema_generator"
 	"github.com/selefra/selefra-provider-sdk/provider/schema"
 	"github.com/selefra/selefra-provider-sdk/provider/transformer/column_value_extractor"
+	"google.golang.org/api/dns/v1"
 )
 
 type TableGcpDnsPoliciesGenerator struct {
@@ -28,11 +28,7 @@ func (x *TableGcpDnsPoliciesGenerator) GetVersion() uint64 {
 }
 
 func (x *TableGcpDnsPoliciesGenerator) GetOptions() *schema.TableOptions {
-	return &schema.TableOptions{
-		PrimaryKeys: []string{
-			"id",
-		},
-	}
+	return &schema.TableOptions{}
 }
 
 func (x *TableGcpDnsPoliciesGenerator) GetDataSource() *schema.DataSource {
@@ -40,11 +36,16 @@ func (x *TableGcpDnsPoliciesGenerator) GetDataSource() *schema.DataSource {
 		Pull: func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask, resultChannel chan<- any) *schema.Diagnostics {
 			c := client.(*gcp_client.Client)
 			nextPageToken := ""
+			dnsClient, err := dns.NewService(ctx, c.ClientOptions...)
+			if err != nil {
+				return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
+			}
 			for {
-				output, err := c.GcpServices.Dns.Policies.List(c.ProjectId).PageToken(nextPageToken).Do()
+				output, err := dnsClient.Policies.List(c.ProjectId).PageToken(nextPageToken).Do()
 				if err != nil {
-					maybeError := errors.WithStack(err)
-					return schema.NewDiagnosticsErrorPullTable(task.Table, maybeError)
+					return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
 				}
 				resultChannel <- output.Policies
 
@@ -59,23 +60,31 @@ func (x *TableGcpDnsPoliciesGenerator) GetDataSource() *schema.DataSource {
 }
 
 func (x *TableGcpDnsPoliciesGenerator) GetExpandClientTask() func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask) []*schema.ClientTaskContext {
-	return gcp_client.ExpandByProjects()
+	return nil
 }
 
 func (x *TableGcpDnsPoliciesGenerator) GetColumns() []*schema.Column {
 	return []*schema.Column{
-		table_schema_generator.NewColumnBuilder().ColumnName("enable_inbound_forwarding").ColumnType(schema.ColumnTypeBool).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("enable_logging").ColumnType(schema.ColumnTypeBool).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("networks").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("primary keys value md5").
-			Extractor(column_value_extractor.PrimaryKeysID()).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("alternative_name_server_config").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("AlternativeNameServerConfig")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("enable_logging").ColumnType(schema.ColumnTypeBool).
+			Extractor(column_value_extractor.StructSelector("EnableLogging")).Build(),
 		table_schema_generator.NewColumnBuilder().ColumnName("project_id").ColumnType(schema.ColumnTypeString).
 			Extractor(gcp_client.ExtractorProject()).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("id").ColumnType(schema.ColumnTypeBigInt).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("alternative_name_server_config").ColumnType(schema.ColumnTypeJSON).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("description").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("kind").ColumnType(schema.ColumnTypeString).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("random id").
+			Extractor(column_value_extractor.UUID()).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("description").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Description")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("enable_inbound_forwarding").ColumnType(schema.ColumnTypeBool).
+			Extractor(column_value_extractor.StructSelector("EnableInboundForwarding")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("id").ColumnType(schema.ColumnTypeBigInt).
+			Extractor(column_value_extractor.StructSelector("Id")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("kind").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Kind")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Name")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("networks").ColumnType(schema.ColumnTypeJSON).
+			Extractor(column_value_extractor.StructSelector("Networks")).Build(),
 	}
 }
 

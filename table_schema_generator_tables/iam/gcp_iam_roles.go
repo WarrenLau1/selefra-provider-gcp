@@ -2,9 +2,11 @@ package iam
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 	"github.com/selefra/selefra-provider-gcp/gcp_client"
+
+	iamadmin "cloud.google.com/go/iam/admin/apiv1"
+	iampb "cloud.google.com/go/iam/admin/apiv1/adminpb"
 	"github.com/selefra/selefra-provider-gcp/table_schema_generator"
 	"github.com/selefra/selefra-provider-sdk/provider/schema"
 	"github.com/selefra/selefra-provider-sdk/provider/transformer/column_value_extractor"
@@ -28,12 +30,7 @@ func (x *TableGcpIamRolesGenerator) GetVersion() uint64 {
 }
 
 func (x *TableGcpIamRolesGenerator) GetOptions() *schema.TableOptions {
-	return &schema.TableOptions{
-		PrimaryKeys: []string{
-			"project_id",
-			"name",
-		},
-	}
+return &schema.TableOptions{}
 }
 
 func (x *TableGcpIamRolesGenerator) GetDataSource() *schema.DataSource {
@@ -41,18 +38,31 @@ func (x *TableGcpIamRolesGenerator) GetDataSource() *schema.DataSource {
 		Pull: func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask, resultChannel chan<- any) *schema.Diagnostics {
 			c := client.(*gcp_client.Client)
 			nextPageToken := ""
-			for {
-				output, err := c.GcpServices.Iam.Roles.List().PageToken(nextPageToken).Do()
-				if err != nil {
-					maybeError := errors.WithStack(err)
-					return schema.NewDiagnosticsErrorPullTable(task.Table, maybeError)
-				}
-				resultChannel <- output.Roles
 
-				if output.NextPageToken == "" {
+			iamClient, err := iamadmin.NewIamClient(ctx, c.ClientOptions...)
+			if err != nil {
+				return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
+			}
+			iamClient.CallOptions = &iamadmin.IamCallOptions{}
+
+			for {
+				req := &iampb.ListRolesRequest{
+					PageSize:  1000,
+					PageToken: nextPageToken,
+					Parent:    fmt.Sprintf("projects/%s", c.ProjectId),
+				}
+				resp, err := iamClient.ListRoles(ctx, req, c.CallOptions...)
+				if err != nil {
+					return schema.NewDiagnosticsErrorPullTable(task.Table, err)
+
+				}
+				resultChannel <- resp.Roles
+
+				if resp.NextPageToken == "" {
 					break
 				}
-				nextPageToken = output.NextPageToken
+				nextPageToken = resp.NextPageToken
 			}
 			return nil
 		},
@@ -60,23 +70,29 @@ func (x *TableGcpIamRolesGenerator) GetDataSource() *schema.DataSource {
 }
 
 func (x *TableGcpIamRolesGenerator) GetExpandClientTask() func(ctx context.Context, clientMeta *schema.ClientMeta, client any, task *schema.DataSourcePullTask) []*schema.ClientTaskContext {
-	return gcp_client.ExpandByProjects()
+	return nil
 }
 
 func (x *TableGcpIamRolesGenerator) GetColumns() []*schema.Column {
 	return []*schema.Column{
-		table_schema_generator.NewColumnBuilder().ColumnName("deleted").ColumnType(schema.ColumnTypeBool).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("stage").ColumnType(schema.ColumnTypeString).Build(),
 		table_schema_generator.NewColumnBuilder().ColumnName("project_id").ColumnType(schema.ColumnTypeString).
 			Extractor(gcp_client.ExtractorProject()).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("included_permissions").ColumnType(schema.ColumnTypeStringArray).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("title").ColumnType(schema.ColumnTypeString).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("name").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Name")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("description").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Description")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("included_permissions").ColumnType(schema.ColumnTypeStringArray).
+			Extractor(column_value_extractor.StructSelector("IncludedPermissions")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("deleted").ColumnType(schema.ColumnTypeBool).
+			Extractor(column_value_extractor.StructSelector("Deleted")).Build(),
 		table_schema_generator.NewColumnBuilder().ColumnName("selefra_id").ColumnType(schema.ColumnTypeString).SetUnique().Description("primary keys value md5").
-			Extractor(column_value_extractor.PrimaryKeysID()).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("description").ColumnType(schema.ColumnTypeString).Build(),
-		table_schema_generator.NewColumnBuilder().ColumnName("etag").ColumnType(schema.ColumnTypeString).
-			Extractor(gcp_client.ExtractorProtoEtag()).Build(),
+			Extractor(column_value_extractor.UUID()).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("title").ColumnType(schema.ColumnTypeString).
+			Extractor(column_value_extractor.StructSelector("Title")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("stage").ColumnType(schema.ColumnTypeBigInt).
+			Extractor(column_value_extractor.StructSelector("Stage")).Build(),
+		table_schema_generator.NewColumnBuilder().ColumnName("etag").ColumnType(schema.ColumnTypeIntArray).
+			Extractor(column_value_extractor.StructSelector("Etag")).Build(),
 	}
 }
 

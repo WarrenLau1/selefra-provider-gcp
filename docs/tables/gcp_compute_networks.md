@@ -1,35 +1,28 @@
 # Table: gcp_compute_networks
 
-## Primary Keys 
-
-```
-self_link
-```
-
-
 ## Columns 
 
 |  Column Name   |  Data Type  | Uniq | Nullable | Description | 
 |  ----  | ----  | ----  | ----  | ---- | 
-| auto_create_subnetworks | bool | X | √ |  | 
-| gateway_ipv4 | string | X | √ |  | 
-| kind | string | X | √ |  | 
 | enable_ula_internal_ipv6 | bool | X | √ |  | 
-| self_link | string | √ | √ |  | 
-| ipv4_range | string | X | √ |  | 
-| creation_timestamp | string | X | √ |  | 
-| internal_ipv6_range | string | X | √ |  | 
-| mtu | big_int | X | √ |  | 
-| subnetworks | string_array | X | √ |  | 
-| project_id | string | X | √ |  | 
-| description | string | X | √ |  | 
 | id | big_int | X | √ |  | 
 | peerings | json | X | √ |  | 
-| routing_config | json | X | √ |  | 
-| self_link_with_id | string | X | √ |  | 
-| selefra_id | string | √ | √ | primary keys value md5 | 
-| firewall_policy | string | X | √ |  | 
+| creation_timestamp | string | X | √ |  | 
+| gateway_i_pv4 | string | X | √ |  | 
 | name | string | X | √ |  | 
+| self_link | string | X | √ |  | 
+| self_link_with_id | string | X | √ |  | 
+| subnetworks | string_array | X | √ |  | 
+| auto_create_subnetworks | bool | X | √ |  | 
+| description | string | X | √ |  | 
+| kind | string | X | √ |  | 
 | network_firewall_policy_enforcement_order | string | X | √ |  | 
+| routing_config | json | X | √ |  | 
+| selefra_id | string | √ | √ | random id | 
+| i_pv4_range | string | X | √ |  | 
+| firewall_policy | string | X | √ |  | 
+| internal_ipv6_range | string | X | √ |  | 
+| mtu | big_int | X | √ |  | 
+| project_id | string | X | √ |  | 
 
 

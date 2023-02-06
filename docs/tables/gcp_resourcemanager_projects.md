@@ -4,16 +4,16 @@
 
 |  Column Name   |  Data Type  | Uniq | Nullable | Description | 
 |  ----  | ----  | ----  | ----  | ---- | 
-| labels | json | X | √ |  | 
-| project_id | string | X | √ |  | 
-| display_name | string | X | √ |  | 
-| create_time | timestamp | X | √ |  | 
-| etag | string | X | √ |  | 
-| delete_time | timestamp | X | √ |  | 
-| selefra_id | string | √ | √ | random id | 
+| create_time | string | X | √ |  | 
+| delete_time | string | X | √ |  | 
 | name | string | X | √ |  | 
+| project_id | string | X | √ |  | 
+| selefra_id | string | √ | √ | primary keys value md5 | 
+| display_name | string | X | √ |  | 
+| etag | string | X | √ |  | 
+| labels | json | X | √ |  | 
 | parent | string | X | √ |  | 
-| state | big_int | X | √ |  | 
-| update_time | timestamp | X | √ |  | 
+| state | string | X | √ |  | 
+| update_time | string | X | √ |  | 
 
 

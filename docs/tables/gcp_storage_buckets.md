@@ -1,44 +1,38 @@
 # Table: gcp_storage_buckets
 
-## Primary Keys 
-
-```
-name
-```
-
-
 ## Columns 
 
 |  Column Name   |  Data Type  | Uniq | Nullable | Description | 
 |  ----  | ----  | ----  | ----  | ---- | 
-| name | string | √ | √ |  | 
-| acl | json | X | √ |  | 
+| uniform_bucket_level_access | json | X | √ |  | 
+| custom_placement_config | json | X | √ |  | 
+| created | timestamp | X | √ |  | 
+| retention_policy | json | X | √ |  | 
 | website | json | X | √ |  | 
 | etag | string | X | √ |  | 
-| project_id | string | X | √ |  | 
-| bucket_policy_only | json | X | √ |  | 
-| created | timestamp | X | √ |  | 
-| lifecycle | json | X | √ |  | 
-| retention_policy | json | X | √ |  | 
 | project_number | big_int | X | √ |  | 
-| uniform_bucket_level_access | json | X | √ |  | 
+| acl | json | X | √ |  | 
+| project_id | string | X | √ |  | 
+| requester_pays | bool | X | √ |  | 
+| logging | json | X | √ |  | 
 | default_object_acl | json | X | √ |  | 
-| labels | json | X | √ |  | 
-| custom_placement_config | json | X | √ |  | 
-| versioning_enabled | bool | X | √ |  | 
-| storage_class | string | X | √ |  | 
 | cors | json | X | √ |  | 
 | default_event_based_hold | bool | X | √ |  | 
-| predefined_default_object_acl | string | X | √ |  | 
-| meta_generation | big_int | X | √ |  | 
-| logging | json | X | √ |  | 
-| selefra_id | string | √ | √ | primary keys value md5 | 
+| selefra_id | string | √ | √ | random id | 
 | location | string | X | √ |  | 
-| requester_pays | bool | X | √ |  | 
+| lifecycle | json | X | √ |  | 
 | encryption | json | X | √ |  | 
-| public_access_prevention | big_int | X | √ |  | 
+| autoclass | json | X | √ |  | 
+| versioning_enabled | bool | X | √ |  | 
+| meta_generation | big_int | X | √ |  | 
+| labels | json | X | √ |  | 
+| rpo | big_int | X | √ |  | 
+| name | string | X | √ |  | 
+| predefined_default_object_acl | string | X | √ |  | 
+| storage_class | string | X | √ |  | 
+| bucket_policy_only | json | X | √ |  | 
 | predefined_acl | string | X | √ |  | 
 | location_type | string | X | √ |  | 
-| rpo | big_int | X | √ |  | 
+| public_access_prevention | big_int | X | √ |  | 
 
 
