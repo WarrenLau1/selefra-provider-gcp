@@ -50,12 +50,7 @@ func GetProvider() *provider.Provider {
 		},
 		ConfigMeta: provider.ConfigMeta{
 			GetDefaultConfigTemplate: func(ctx context.Context) string {
-				return `##  Optional, Repeated. Add an accounts block for every account you want to assume-role into and fetch data from.
-#accounts:
-#  - project_ids: # unique identifier for projects
-#    service_account_key_json: # path to service key in json format
-#    account_name: # name the account
-#    service_account_env_key: # environment variable, equivalent to SELEFRA_SERVICE_ACCOUNT_KEY_JSON by default`
+				return `# service_account_env_key: <YOUR_GCP_JSON>`
 			},
 			Validation: func(ctx context.Context, config *viper.Viper) *schema.Diagnostics {
 				var gcpConfig gcp_client.Config
